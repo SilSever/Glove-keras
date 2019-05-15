@@ -1,6 +1,7 @@
 # Glove-keras
 
 ## Links
+
 * [GloVe Paper](https://www.aclweb.org/anthology/D14-1162)
 * [GloVe websiete](https://nlp.stanford.edu/projects/glove/)
 * [What is GloVe?](https://medium.com/@japneet121/word-vectorization-using-glove-76919685ee0b)
