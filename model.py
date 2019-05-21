@@ -6,7 +6,6 @@ import keras.backend as k
 
 def glove_model(vocab_size=10, vector_dim=3):
     """
-    A Keras implementation of the GloVe architecture
     :param vocab_size: The number of distinct words
     :param vector_dim: The vector dimension of each word
     :return:
@@ -35,7 +34,7 @@ def glove_model(vocab_size=10, vector_dim=3):
 
 def custom_loss(y_true, y_pred):
     """
-    This is GloVe's loss function
+    This is GloVe's loss function, view section 3.1 on the original paper for details.
     :param y_true: The actual values, y_true = X_ij
     :param y_pred: The predicted occurrences from the model ( w_i^T*w_j )
     :return: The loss associated with this batch
