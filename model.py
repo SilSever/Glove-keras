@@ -1,7 +1,7 @@
-from tensorflow.python.keras.layers import Input, Embedding, Dot, Reshape
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.optimizers import Adam
-import tensorflow.python.keras.backend as K
+from keras.layers import Input, Embedding, Dot, Reshape, Add
+from keras.models import Model
+from keras.optimizers import Adam
+import keras.backend as k
 
 
 def glove_model(vocab_size=10, vector_dim=3):
@@ -25,7 +25,9 @@ def glove_model(vocab_size=10, vector_dim=3):
     target_bias = Reshape((1,))(target_bias)
     contex_bias = Reshape((1,))(context_bias)
 
-    model = Model(inputs=[input_target, input_context], outputs=[dot_product, target_bias, contex_bias])
+    prediction = Add()([dot_product, target_bias, context_bias])
+
+    model = Model(inputs=[input_target, input_context], outputs=prediction)
     model.compile(loss=custom_loss, optimizer=Adam())
 
     return model
@@ -40,6 +42,6 @@ def custom_loss(y_true, y_pred):
     """
     x_max = 100
     alpha = 3.0 / 4.0
-    fxij = K.pow(K.clip(y_true / x_max, 0.0, 1.0), alpha)
+    fxij = k.pow(k.clip(y_true / x_max, 0.0, 1.0), alpha)
 
-    return K.sum(fxij * K.square(y_pred - K.log(y_true)), axis=-1)
+    return k.sum(fxij * k.square(y_pred - k.log(y_true)), axis=-1)
