@@ -6,7 +6,6 @@ import tensorflow.python.keras.backend as K
 
 def glove_model(vocab_size=10, vector_dim=3):
     """
-    A Keras implementation of the GloVe architecture
     :param vocab_size: The number of distinct words
     :param vector_dim: The vector dimension of each word
     :return:
