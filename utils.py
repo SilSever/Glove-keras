@@ -1,22 +1,19 @@
-from typing import List, Union, Tuple
 from collections import defaultdict
+from typing import List, Union, Tuple
 
-from keras.preprocessing.text import Tokenizer
 import numpy as np
+from tensorflow.python.keras.preprocessing.text import Tokenizer
 
 
-def read_file_old(path) -> List[str]:
+def read_file_old(filename) -> List[str]:
     """
-    :param path Path to the file
-    :return sentences List
+    Read the dataset line by line.
+    :param filename: file to read
+    :return: a list of lines
     """
-    file = []
-    with open(path, mode='r') as f:
-        for line in f:
-            line = line.strip()
-            file.append(line)
-
-    return file
+    with open(filename, encoding="utf8") as file:
+        f = (line.strip() for line in file)
+        return [line for line in f if line]
 
 
 def read_file(file, num_lines=0) -> List[str]:
@@ -38,22 +35,21 @@ def read_file(file, num_lines=0) -> List[str]:
 
 def tokenize(lines: List[str], num_words=10000) -> Tuple[List[List], Tokenizer]:
     """
-    Using Keras' Tokenizer
-    :param lines: A list of strings i.e. the sentences
-    :param num_words: The maximum number of words to keep
-    :return: A list of word indices per sentence & the tokenizer object itself
+    Keras Tokenizer to tokenize the lines.
+    :param lines: A list of strings.
+    :param num_words: The maximum number of words to keep.
+    :return: A list of word indices per sentence, the tokenizer object.
     """
     tokenizer = Tokenizer(num_words=num_words)
     tokenizer.fit_on_texts(lines)
-
     sequences = tokenizer.texts_to_sequences(lines)
 
     return sequences, tokenizer
 
 
-def bigram_count(token_list: List[int], window_size: int, cache: defaultdict):
+def distance_count(token_list: List[int], window_size: int, cache: defaultdict):
     """
-    It computes the actual co-occurrence patterns required by GloVe. The score of a pair
+    It computes the co-occurrence patterns required by GloVe. The score of a pair
     if weighted by their distance e.g. in a sentence where words 'a' and 'b' are k words apart
     the corresponding cache entry will be updated as
                 cache(a, b) += 1.0 / k
@@ -66,7 +62,9 @@ def bigram_count(token_list: List[int], window_size: int, cache: defaultdict):
     for central_index, central_word_id in enumerate(token_list):
         for distance in range(1, window_size + 1):
             if central_index + distance < sentence_size:
-                first_id, second_id = sorted([central_word_id, token_list[central_index + distance]])
+                first_id, second_id = sorted(
+                    [central_word_id, token_list[central_index + distance]]
+                )
                 cache[first_id][second_id] += 1.0 / distance
 
 
@@ -77,36 +75,26 @@ def build_cooccurrences(sequences: List[List[int]], cache: defaultdict, window=5
     :param cache: The current cache
     :param window: The size of window to look around a central word
     """
-
     for seq in sequences:
-        bigram_count(token_list=seq, cache=cache, window_size=window)
+        distance_count(token_list=seq, window_size=window, cache=cache)
 
 
 def cache_to_pairs(cache: defaultdict) -> Union[np.array, np.array, np.array]:
     """
-    Given the computed cache it produces the
     :param cache:
     :return:
     """
-
     first, second, x_ijs = [], [], []
-
     for first_id in cache.keys():
-
         for second_id in cache[first_id].keys():
-
             x_ij = cache[first_id][second_id]
-
             # add (main, context) pair
             first.append(first_id)
             second.append(second_id)
             x_ijs.append(x_ij)
-
             # add (context, main) pair
             first.append(second_id)
             second.append(first_id)
             x_ijs.append(x_ij)
 
     return np.array(first), np.array(second), np.array(x_ijs)
-
-

@@ -1,14 +1,14 @@
-from keras.layers import Input, Embedding, Dot, Reshape, Add
-from keras.models import Model
-from keras.optimizers import Adam
-import keras.backend as k
+import tensorflow.python.keras.backend as k
+from tensorflow.python.keras.layers import Input, Embedding, Dot, Reshape, Add
+from tensorflow.python.keras.models import Model
+from tensorflow.python.keras.optimizers import Adam
 
 
-def glove_model(vocab_size=10, vector_dim=3):
+def glove_model(vocab_size: int = 10, vector_dim: int = 3):
     """
-    :param vocab_size: The number of distinct words
-    :param vector_dim: The vector dimension of each word
-    :return:
+    :param vocab_size: The number of distinct words.
+    :param vector_dim: The vector dimension of each word.
+    :return: the Keras GloVe model.
     """
     input_target = Input((1,))
     input_context = Input((1,))
@@ -20,9 +20,9 @@ def glove_model(vocab_size=10, vector_dim=3):
     context_bias = Embedding(vocab_size, 1, input_length=1)(input_context)
 
     dot_product = Dot(axes=-1)([target_embedding, context_embedding])
-    dot_product = Reshape((1, ))(dot_product)
+    dot_product = Reshape((1,))(dot_product)
     target_bias = Reshape((1,))(target_bias)
-    contex_bias = Reshape((1,))(context_bias)
+    context_bias = Reshape((1,))(context_bias)
 
     prediction = Add()([dot_product, target_bias, context_bias])
 
