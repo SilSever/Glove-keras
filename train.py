@@ -66,7 +66,10 @@ def save_word2vec_format(model, tokenizer, vector_size, vocab_size):
     with open(config.EMBEDDINGS, "w") as f:
         f.write("{} {}\n".format(vocab_size - 1, vector_size))
 
-        vectors = model.get_layer(config.CENTRAL_EMB).get_weights()[0]
+        vectors = (
+            model.get_layer(config.CNTRL_EMB).get_weights()[0]
+            + model.get_layer(config.CTX_EMB).get_weights()[0]
+        )
         for word, i in tokenizer.word_index.items():
             if i > vocab_size:
                 return
@@ -96,11 +99,7 @@ def parse_args():
         "--batch-size", help="size of the batch", dest="batch", type=int, default=512
     )
     parser.add_argument(
-        "--size",
-        help="number of epochs",
-        dest="vector_size",
-        type=int,
-        default=30,
+        "--size", help="number of epochs", dest="vector_size", type=int, default=30
     )
     parser.add_argument(
         "--num-words",

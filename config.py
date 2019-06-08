@@ -4,7 +4,7 @@ SAVE_WEIGHTS = "resources/glove_weights"
 UNKNOWN_WORD = "<unk>"
 EMBEDDINGS = "resources/vec.txt"
 
-CENTRAL_EMB = 'central_embeddings'
-CONTEXT_EMB = 'context_embeddings'
-CENTRAL_BIASES = 'central_biases'
-CONTEXT_BIASES = 'context_biases'
+CNTRL_EMB = 'central_embeddings'
+CTX_EMB = 'context_embeddings'
+CNTRL_BS = 'central_biases'
+CTX_BS = 'context_biases'

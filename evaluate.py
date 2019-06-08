@@ -24,7 +24,7 @@ def fancy_w2v_operation(path_embeddings):
     vectors = gensim.models.KeyedVectors.load_word2vec_format(
         path_embeddings, binary=False
     )
-    print(vectors.most_similar(positive=['woman', 'king'], negative=['man'], topn=1))
+    print(vectors.most_similar(positive=['woman', 'king'], negative=['man'], topn=2))
 
 
 def parse_args():
@@ -49,4 +49,4 @@ def main(words: List[str], path_embeddings: str, top_k: int = 3):
 if __name__ == "__main__":
     args = parse_args()
     main(args.words, args.vectors, args.top)
-    # fancy_w2v_operation(args.vectors)
+    fancy_w2v_operation(args.vectors)

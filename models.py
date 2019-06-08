@@ -3,7 +3,7 @@ from tensorflow.python.keras.layers import Input, Embedding, Dot, Reshape, Add
 from tensorflow.python.keras.models import Model
 from tensorflow.python.keras.optimizers import Adam
 
-from config import CENTRAL_EMB, CONTEXT_EMB, CENTRAL_BIASES, CONTEXT_BIASES
+from config import CNTRL_EMB, CTX_EMB, CNTRL_BS, CTX_BS
 
 
 def glove_model(vocab_size: int = 10, vector_dim: int = 3):
@@ -16,16 +16,16 @@ def glove_model(vocab_size: int = 10, vector_dim: int = 3):
     input_context = Input((1,), name="context_word_id")
 
     central_embedding = Embedding(
-        vocab_size, vector_dim, input_length=1, name=CENTRAL_EMB
+        vocab_size, vector_dim, input_length=1, name=CNTRL_EMB
     )(input_target)
-    central_bias = Embedding(vocab_size, 1, input_length=1, name=CENTRAL_BIASES)(
+    central_bias = Embedding(vocab_size, 1, input_length=1, name=CNTRL_BS)(
         input_target
     )
 
     context_embedding = Embedding(
-        vocab_size, vector_dim, input_length=1, name=CONTEXT_EMB
+        vocab_size, vector_dim, input_length=1, name=CTX_EMB
     )(input_context)
-    context_bias = Embedding(vocab_size, 1, input_length=1, name=CONTEXT_BIASES)(
+    context_bias = Embedding(vocab_size, 1, input_length=1, name=CTX_BS)(
         input_context
     )
 
