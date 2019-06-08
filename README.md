@@ -1,5 +1,9 @@
 # Glove-keras
 
+## Dataset
+
+* text8: http://mattmahoney.net/dc/text8.zip
+
 ## Links
 
 * [GloVe Paper](https://www.aclweb.org/anthology/D14-1162)
