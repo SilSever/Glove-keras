@@ -8,14 +8,15 @@ from model import glove_model
 from utils import read_file, tokenize, build_cooccurrences, cache_to_pairs
 
 
-def preprocessing(filename: str, num_words: int = 10000):
+def preprocessing(filename: str, num_words: int = 10000, num_lines: int = 1000):
     """
 
     :param filename:
     :param num_words:
+    :param num_lines:
     :return:
     """
-    sentences = read_file(filename, num_lines=100)
+    sentences = read_file(filename, num_lines=num_lines)
     seqs, tokenizer = tokenize(lines=sentences, num_words=num_words)
     cache = defaultdict(lambda: defaultdict(int))
     build_cooccurrences(sequences=seqs, cache=cache)
@@ -108,6 +109,13 @@ def parse_args():
         type=int,
         default=10000,
     )
+    parser.add_argument(
+        "--num-lines",
+        help="number of lines to read. -1 all lines are readed",
+        dest="num_lines",
+        type=int,
+        default=-1,
+    )
 
     return parser.parse_args()
 
@@ -119,10 +127,11 @@ def main(
     vector_size: int,
     save_model: str,
     num_words: int,
+    num_lines: int,
 ):
     print("Preprocessing...")
     tokenizer, first_indices, second_indices, freq = preprocessing(
-        filename, num_words=num_words
+        filename, num_words=num_words, num_lines=num_lines
     )
 
     vocab_size = tokenizer.num_words + 1
@@ -151,4 +160,5 @@ if __name__ == "__main__":
         vector_size=args.vector_size,
         save_model=args.model,
         num_words=args.num_words,
+        num_lines=args.num_lines,
     )

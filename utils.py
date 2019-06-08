@@ -5,14 +5,15 @@ import numpy as np
 from tensorflow.python.keras.preprocessing.text import Tokenizer
 
 
-def read_file_old(filename) -> List[str]:
+def read_file_old(filename: str, num_lines: int = -1) -> List[str]:
     """
     Read the dataset line by line.
     :param filename: file to read
+    :param num_lines: Number of lines to read from the file.
     :return: a list of lines
     """
     with open(filename, encoding="utf8") as file:
-        f = (line.strip() for line in file)
+        f = (line.strip() for line in file[:num_lines])
         return [line for line in f if line]
 
 
