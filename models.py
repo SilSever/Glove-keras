@@ -2,6 +2,7 @@ import tensorflow.python.keras.backend as k
 from tensorflow.python.keras.layers import Input, Embedding, Dot, Reshape, Add
 from tensorflow.python.keras.models import Model
 from tensorflow.python.keras.optimizers import Adam
+
 from config import CENTRAL_EMB, CONTEXT_EMB, CENTRAL_BIASES, CONTEXT_BIASES
 
 
@@ -27,12 +28,6 @@ def glove_model(vocab_size: int = 10, vector_dim: int = 3):
     context_bias = Embedding(vocab_size, 1, input_length=1, name=CONTEXT_BIASES)(
         input_context
     )
-
-    # vector_target = central_embedding(input_target)
-    # vector_context = context_embedding(input_context)
-    #
-    # bias_target = central_bias(input_target)
-    # bias_context = context_bias(input_context)
 
     dot_product = Dot(axes=-1)([central_embedding, context_embedding])
     dot_product = Reshape((1,))(dot_product)

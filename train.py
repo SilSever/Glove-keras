@@ -4,7 +4,7 @@ from collections import defaultdict
 import numpy as np
 
 import config
-from model import glove_model
+import models
 from utils import read_file, tokenize, build_cooccurrences, cache_to_pairs
 
 
@@ -48,7 +48,7 @@ def train(
     :return:
     """
 
-    model = glove_model(vocab_size + 1, vector_dim=vector_size)
+    model = models.glove_model(vocab_size + 1, vector_dim=vector_size)
     model.fit(
         [first_indices, second_indices],
         frequencies,
