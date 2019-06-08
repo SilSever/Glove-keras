@@ -96,7 +96,7 @@ def parse_args():
         "--batch-size", help="size of the batch", dest="batch", type=int, default=512
     )
     parser.add_argument(
-        "--vector-size",
+        "--size",
         help="number of epochs",
         dest="vector_size",
         type=int,
