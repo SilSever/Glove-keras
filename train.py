@@ -2,6 +2,7 @@ import argparse
 from collections import defaultdict
 
 import numpy as np
+from tensorflow.python.keras.preprocessing.text import Tokenizer
 
 import config
 import models
@@ -61,9 +62,20 @@ def train(
     return model
 
 
-def save_word2vec_format(model, tokenizer, vector_size, vocab_size):
+def save_word2vec_format(
+    model, path: str, tokenizer: Tokenizer, vector_size: int, vocab_size: int
+):
+    """
+
+    :param model:
+    :param path:
+    :param tokenizer:
+    :param vector_size:
+    :param vocab_size:
+    :return:
+    """
     # saving embeddings
-    with open(config.EMBEDDINGS, "w") as f:
+    with open(path, "w") as f:
         f.write("{} {}\n".format(vocab_size - 1, vector_size))
 
         vectors = (
@@ -77,15 +89,57 @@ def save_word2vec_format(model, tokenizer, vector_size, vocab_size):
             f.write("{} {}\n".format(word, str_vec))
 
 
+def save_vocab(path: str, tokenizer: Tokenizer, vocab_size: int):
+    """
+
+    :param path:
+    :param tokenizer:
+    :param vocab_size:
+    :return:
+    """
+    with open(path, mode="w") as f:
+        for word, i in tokenizer.word_index.items():
+            if i > vocab_size:
+                return
+            f.write("{} {}\n".format(word, tokenizer.word_counts[word]))
+
+
+def main(
+    path_data: str,
+    epochs: int,
+    batch: int,
+    vector_size: int,
+    save_model: str,
+    num_words: int,
+    num_lines: int,
+):
+    print("Preprocessing...")
+    tokenizer, first_indices, second_indices, freq = preprocessing(
+        path_data, num_words=num_words, num_lines=num_lines
+    )
+
+    vocab_size = tokenizer.num_words + 1
+    print("Vocab size:", vocab_size)
+    print("Training...")
+    model = train(
+        first_indices=first_indices,
+        second_indices=second_indices,
+        frequencies=freq,
+        epochs=epochs,
+        batch=batch,
+        vector_size=vector_size,
+        vocab_size=vocab_size,
+        save_model=save_model,
+    )
+    print("Saving vocab...")
+    save_vocab(config.VOCAB, tokenizer, vocab_size)
+    print("Saving embeddings file...")
+    save_word2vec_format(model, config.EMBEDDINGS, tokenizer, vector_size, vocab_size)
+
+
 def parse_args():
     parser = argparse.ArgumentParser("GloVe train")
     parser.add_argument(help="paths to the corpora", dest="input")
-    parser.add_argument(
-        "-o",
-        help="path where to save the embeddings file",
-        required=True,
-        dest="output",
-    )
     parser.add_argument(
         "-m",
         help="path where to save the model file",
@@ -119,41 +173,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def main(
-    filename: str,
-    epochs: int,
-    batch: int,
-    vector_size: int,
-    save_model: str,
-    num_words: int,
-    num_lines: int,
-):
-    print("Preprocessing...")
-    tokenizer, first_indices, second_indices, freq = preprocessing(
-        filename, num_words=num_words, num_lines=num_lines
-    )
-
-    vocab_size = tokenizer.num_words + 1
-    print("Vocab size:", vocab_size)
-    print("Training...")
-    model = train(
-        first_indices=first_indices,
-        second_indices=second_indices,
-        frequencies=freq,
-        epochs=epochs,
-        batch=batch,
-        vector_size=vector_size,
-        vocab_size=vocab_size,
-        save_model=save_model,
-    )
-    print("Saving embeddings file...")
-    save_word2vec_format(model, tokenizer, vector_size, vocab_size)
-
-
 if __name__ == "__main__":
     args = parse_args()
     main(
-        filename=args.input,
+        path_data=args.input,
         epochs=args.epochs,
         batch=args.batch,
         vector_size=args.vector_size,

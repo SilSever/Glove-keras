@@ -1,7 +1,10 @@
 import argparse
+import logging
 from typing import List
 
-import gensim
+from gensim.models import KeyedVectors
+
+import config
 
 
 def word_similarity(
@@ -14,17 +17,48 @@ def word_similarity(
     :param top_k: number of similar words to retrieve.
     :return: the top k similar words for each word in input
     """
-    vectors = gensim.models.KeyedVectors.load_word2vec_format(
-        path_embeddings, binary=False
-    )
+    vectors = KeyedVectors.load_word2vec_format(path_embeddings, binary=False)
     return [vectors.most_similar(word, topn=top_k) for word in words]
 
 
 def fancy_w2v_operation(path_embeddings):
-    vectors = gensim.models.KeyedVectors.load_word2vec_format(
-        path_embeddings, binary=False
+    vectors = KeyedVectors.load_word2vec_format(path_embeddings, binary=False)
+    print(vectors.most_similar(positive=["woman", "king"], negative=["man"], topn=2))
+
+
+def evaluation(path_embeddings: str):
+    logging.basicConfig(
+        format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO
     )
-    print(vectors.most_similar(positive=['woman', 'king'], negative=['man'], topn=2))
+    accuracies = []
+    print("Loading Gensim embeddings")
+    vectors = KeyedVectors.load_word2vec_format(path_embeddings)
+    accuracies.append(print_accuracy(vectors, config.QUESTIONS_WORDS))
+
+
+def print_accuracy(model, questions_file):
+    print("Evaluating...")
+    acc = model.accuracy(questions_file)
+
+    sem_correct = sum((len(acc[i]["correct"]) for i in range(5)))
+    sem_total = sum(
+        (len(acc[i]["correct"]) + len(acc[i]["incorrect"])) for i in range(5)
+    )
+    sem_acc = 100 * float(sem_correct) / sem_total
+    print("Semantic: {}/{}, Accuracy: {:.2f}%".format(sem_correct, sem_total, sem_acc))
+
+    syn_correct = sum((len(acc[i]["correct"]) for i in range(5, len(acc) - 1)))
+    syn_total = sum(
+        (len(acc[i]["correct"]) + len(acc[i]["incorrect"]))
+        for i in range(5, len(acc) - 1)
+    )
+    syn_acc = 100 * float(syn_correct) / syn_total
+    print("Syntactic: {}/{}, Accuracy: {:.2f}%".format(syn_correct, syn_total, syn_acc))
+    tot_correct = sem_correct + syn_correct
+    tot_total = sem_total + syn_total
+    tot_acc = 100 * float(tot_correct) / tot_total
+    print("Total: {}/{}, Accuracy: {:.2f}%".format(tot_correct, tot_total, tot_acc))
+    return sem_acc, syn_acc
 
 
 def parse_args():
@@ -47,6 +81,7 @@ def main(words: List[str], path_embeddings: str, top_k: int = 3):
 
 
 if __name__ == "__main__":
-    args = parse_args()
-    main(args.words, args.vectors, args.top)
-    fancy_w2v_operation(args.vectors)
+    # args = parse_args()
+    # main(args.words, args.vectors, args.top)
+    # fancy_w2v_operation(args.vectors)
+    evaluation(config.EMBEDDINGS)
