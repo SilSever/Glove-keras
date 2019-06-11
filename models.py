@@ -1,7 +1,7 @@
 import tensorflow.python.keras.backend as k
 from tensorflow.python.keras.layers import Input, Embedding, Dot, Reshape, Add
 from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.optimizers import Adam
+from tensorflow.python.keras.optimizers import Adagrad
 
 from config import CNTRL_EMB, CTX_EMB, CNTRL_BS, CTX_BS
 
@@ -37,7 +37,7 @@ def glove_model(vocab_size: int = 10, vector_dim: int = 3):
     prediction = Add()([dot_product, bias_target, bias_context])
 
     model = Model(inputs=[input_target, input_context], outputs=prediction)
-    model.compile(loss=custom_loss, optimizer=Adam())
+    model.compile(loss=custom_loss, optimizer=Adagrad(lr=0.05))
     print(model.summary())
     return model
 
