@@ -61,9 +61,45 @@ def train(
     model.save(save_model)
     return model
 
+def vectors_save_mode(save_mode, model):
+    """
+
+    :param save_mode:
+    :param model:
+    :return vectors:
+    """
+
+    if save_mode is 0:
+        print("Mode is ", save_mode)
+        word_vectors = (
+            model.get_layer(config.CNTRL_EMB).get_weights()[0]
+            + model.get_layer(config.CNTRL_BS).get_weights()[0]
+        )
+
+        context_vectors = (
+            model.get_layer(config.CTX_EMB).get_weights()[0]
+            + model.get_layer(config.CTX_BS).get_weights()[0]
+        )
+
+        vectors = word_vectors + context_vectors
+
+    elif save_mode is 1:
+        # save word vectors (no bias)
+        print("Mode is ", save_mode)
+        vectors = (model.get_layer(config.CNTRL_EMB).get_weights()[0])
+
+    else:
+        # Save (word + context word) vectors (no biases)
+        print("Mode is ", save_mode)
+        vectors = (
+            model.get_layer(config.CNTRL_EMB).get_weights()[0]
+            + model.get_layer(config.CTX_EMB).get_weights()[0]
+        )
+    return vectors
+
 
 def save_word2vec_format(
-    model, path: str, tokenizer: Tokenizer, vector_size: int, vocab_size: int
+    model, path: str, tokenizer: Tokenizer, vector_size: int, vocab_size: int, save_mode: int
 ):
     """
 
@@ -72,16 +108,14 @@ def save_word2vec_format(
     :param tokenizer:
     :param vector_size:
     :param vocab_size:
+    :param save_mode:
     :return:
     """
     # saving embeddings
+    vectors = vectors_save_mode(save_mode, model)
     with open(path, "w") as f:
         f.write("{} {}\n".format(vocab_size - 1, vector_size))
 
-        vectors = (
-            model.get_layer(config.CNTRL_EMB).get_weights()[0]
-            + model.get_layer(config.CTX_EMB).get_weights()[0]
-        )
         for word, i in tokenizer.word_index.items():
             if i > vocab_size:
                 return
@@ -112,6 +146,7 @@ def main(
     save_model: str,
     num_words: int,
     num_lines: int,
+    save_mode: int,
 ):
     print("Preprocessing...")
     tokenizer, first_indices, second_indices, freq = preprocessing(
@@ -134,7 +169,7 @@ def main(
     print("Saving vocab...")
     save_vocab(config.VOCAB, tokenizer, vocab_size)
     print("Saving embeddings file...")
-    save_word2vec_format(model, config.EMBEDDINGS, tokenizer, vector_size, vocab_size)
+    save_word2vec_format(model, config.EMBEDDINGS, tokenizer, vector_size, vocab_size, save_mode)
 
 
 def parse_args():
@@ -169,6 +204,14 @@ def parse_args():
         type=int,
         default=-1,
     )
+    parser.add_argument(
+        "--save-mode",
+        help="save mode determines the type of embeddings to save",
+        dest="save_mode",
+        type=int,
+        default=0,
+    )
+
 
     return parser.parse_args()
 
@@ -183,4 +226,5 @@ if __name__ == "__main__":
         save_model=args.model,
         num_words=args.num_words,
         num_lines=args.num_lines,
+        save_mode=args.save_mode,
     )
