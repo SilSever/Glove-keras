@@ -6,51 +6,67 @@ from tensorflow.python.keras.optimizers import Adagrad
 from config import CNTRL_EMB, CTX_EMB, CNTRL_BS, CTX_BS
 
 
-def glove_model(vocab_size: int = 10, vector_dim: int = 3):
-    """
-    :param vocab_size: The number of distinct words.
-    :param vector_dim: The vector dimension of each word.
-    :return: the Keras GloVe model.
-    """
-    input_target = Input((1,), name="central_word_id")
-    input_context = Input((1,), name="context_word_id")
+class Glove:
+    def __init__(
+        self,
+        vocab_size: int = 10,
+        vector_dim: int = 3,
+        alpha: int = 0.75,
+        x_max: int = 100,
+        lr: int = 0.05,
+    ):
+        self.vocab_size = vocab_size
+        self.vector_dim = vector_dim
+        self.alpha = alpha
+        self.x_max = x_max
+        self.lr = lr
 
-    central_embedding = Embedding(
-        vocab_size, vector_dim, input_length=1, name=CNTRL_EMB
-    )(input_target)
-    central_bias = Embedding(vocab_size, 1, input_length=1, name=CNTRL_BS)(
-        input_target
-    )
+        self.model = self.build_model(self.vocab_size, self.vector_dim)
 
-    context_embedding = Embedding(
-        vocab_size, vector_dim, input_length=1, name=CTX_EMB
-    )(input_context)
-    context_bias = Embedding(vocab_size, 1, input_length=1, name=CTX_BS)(
-        input_context
-    )
+    def build_model(self, vocab_size: int, vector_dim: int):
+        """
+        :param vocab_size: The number of distinct words.
+        :param vector_dim: The vector dimension of each word.
+        :return: the Keras GloVe model.
+        """
+        input_target = Input((1,), name="central_word_id")
+        input_context = Input((1,), name="context_word_id")
 
-    dot_product = Dot(axes=-1)([central_embedding, context_embedding])
-    dot_product = Reshape((1,))(dot_product)
-    bias_target = Reshape((1,))(central_bias)
-    bias_context = Reshape((1,))(context_bias)
+        central_embedding = Embedding(
+            vocab_size, vector_dim, input_length=1, name=CNTRL_EMB
+        )(input_target)
+        central_bias = Embedding(vocab_size, 1, input_length=1, name=CNTRL_BS)(
+            input_target
+        )
 
-    prediction = Add()([dot_product, bias_target, bias_context])
+        context_embedding = Embedding(
+            vocab_size, vector_dim, input_length=1, name=CTX_EMB
+        )(input_context)
+        context_bias = Embedding(vocab_size, 1, input_length=1, name=CTX_BS)(
+            input_context
+        )
 
-    model = Model(inputs=[input_target, input_context], outputs=prediction)
-    model.compile(loss=custom_loss, optimizer=Adagrad(lr=0.05))
-    print(model.summary())
-    return model
+        dot_product = Dot(axes=-1)([central_embedding, context_embedding])
+        dot_product = Reshape((1,))(dot_product)
+        bias_target = Reshape((1,))(central_bias)
+        bias_context = Reshape((1,))(context_bias)
 
+        prediction = Add()([dot_product, bias_target, bias_context])
 
-def custom_loss(y_true, y_pred):
-    """
-    This is GloVe's loss function, view section 3.1 on the original paper for details.
-    :param y_true: The actual values, y_true = X_ij
-    :param y_pred: The predicted occurrences from the model ( w_i^T*w_j )
-    :return: The loss associated with this batch
-    """
-    x_max = 100
-    alpha = 3.0 / 4.0
-    fxij = k.pow(k.clip(y_true / x_max, 0.0, 1.0), alpha)
+        model = Model(inputs=[input_target, input_context], outputs=prediction)
+        model.compile(loss=self.custom_loss, optimizer=Adagrad(lr=self.lr))
+        print(model.summary())
+        return model
 
-    return k.sum(fxij * k.square(y_pred - k.log(y_true)), axis=-1)
+    def custom_loss(self, y_true, y_pred):
+        """
+        This is GloVe's loss function, view section 3.1 on the original paper for details.
+        :param y_true: The actual values, y_true = X_ij
+        :param y_pred: The predicted occurrences from the model ( w_i^T*w_j )
+        :return: The loss associated with this batch
+        """
+        x_max = self.x_max
+        alpha = self.alpha
+        fxij = k.pow(k.clip(y_true / x_max, 0.0, 1.0), alpha)
+
+        return k.sum(fxij * k.square(y_pred - k.log(y_true)), axis=-1)

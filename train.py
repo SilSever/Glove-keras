@@ -2,27 +2,26 @@ import argparse
 from collections import defaultdict
 
 import numpy as np
-from tensorflow.python.keras.preprocessing.text import Tokenizer
 
 import config
 import models
-from utils import read_file, tokenize, build_cooccurrences, cache_to_pairs
+import utils
 
 
-def preprocessing(filename: str, num_words: int = 10000, num_lines: int = 1000):
+def preprocessing(filename: str, num_words: int = 10000, min_count: int = 5):
     """
 
     :param filename:
     :param num_words:
-    :param num_lines:
+    :param min_count:
     :return:
     """
-    sentences = read_file(filename, num_lines=num_lines)
-    seqs, tokenizer = tokenize(lines=sentences, num_words=num_words)
+    sentences = utils.read_file(filename)
+    seqs, tokenizer = utils.tokenize(sentences, num_words, min_count)
     cache = defaultdict(lambda: defaultdict(int))
-    build_cooccurrences(sequences=seqs, cache=cache)
+    utils.build_cooccurrences(sequences=seqs, cache=cache)
 
-    first_indices, second_indices, frequencies = cache_to_pairs(cache=cache)
+    first_indices, second_indices, frequencies = utils.cache_to_pairs(cache=cache)
     return tokenizer, first_indices, second_indices, frequencies
 
 
@@ -49,8 +48,8 @@ def train(
     :return:
     """
 
-    model = models.glove_model(vocab_size + 1, vector_dim=vector_size)
-    model.fit(
+    glove = models.Glove(vocab_size + 1, vector_dim=vector_size)
+    glove.model.fit(
         [first_indices, second_indices],
         frequencies,
         epochs=epochs,
@@ -58,84 +57,8 @@ def train(
         verbose=1,
     )
 
-    model.save(save_model)
-    return model
-
-def vectors_save_mode(save_mode, model):
-    """
-
-    :param save_mode:
-    :param model:
-    :return vectors:
-    """
-
-    if save_mode is 0:
-        print("Mode is ", save_mode)
-        word_vectors = (
-            model.get_layer(config.CNTRL_EMB).get_weights()[0]
-            + model.get_layer(config.CNTRL_BS).get_weights()[0]
-        )
-
-        context_vectors = (
-            model.get_layer(config.CTX_EMB).get_weights()[0]
-            + model.get_layer(config.CTX_BS).get_weights()[0]
-        )
-
-        vectors = word_vectors + context_vectors
-
-    elif save_mode is 1:
-        # save word vectors (no bias)
-        print("Mode is ", save_mode)
-        vectors = (model.get_layer(config.CNTRL_EMB).get_weights()[0])
-
-    else:
-        # Save (word + context word) vectors (no biases)
-        print("Mode is ", save_mode)
-        vectors = (
-            model.get_layer(config.CNTRL_EMB).get_weights()[0]
-            + model.get_layer(config.CTX_EMB).get_weights()[0]
-        )
-    return vectors
-
-
-def save_word2vec_format(
-    model, path: str, tokenizer: Tokenizer, vector_size: int, vocab_size: int, save_mode: int
-):
-    """
-
-    :param model:
-    :param path:
-    :param tokenizer:
-    :param vector_size:
-    :param vocab_size:
-    :param save_mode:
-    :return:
-    """
-    # saving embeddings
-    vectors = vectors_save_mode(save_mode, model)
-    with open(path, "w") as f:
-        f.write("{} {}\n".format(vocab_size - 1, vector_size))
-
-        for word, i in tokenizer.word_index.items():
-            if i > vocab_size:
-                return
-            str_vec = " ".join(map(str, list(vectors[i, :])))
-            f.write("{} {}\n".format(word, str_vec))
-
-
-def save_vocab(path: str, tokenizer: Tokenizer, vocab_size: int):
-    """
-
-    :param path:
-    :param tokenizer:
-    :param vocab_size:
-    :return:
-    """
-    with open(path, mode="w") as f:
-        for word, i in tokenizer.word_index.items():
-            if i > vocab_size:
-                return
-            f.write("{} {}\n".format(word, tokenizer.word_counts[word]))
+    glove.model.save(save_model)
+    return glove.model
 
 
 def main(
@@ -145,12 +68,12 @@ def main(
     vector_size: int,
     save_model: str,
     num_words: int,
-    num_lines: int,
+    min_count: int,
     save_mode: int,
 ):
     print("Preprocessing...")
     tokenizer, first_indices, second_indices, freq = preprocessing(
-        path_data, num_words=num_words, num_lines=num_lines
+        path_data, num_words, min_count
     )
 
     vocab_size = tokenizer.num_words + 1
@@ -167,9 +90,11 @@ def main(
         save_model=save_model,
     )
     print("Saving vocab...")
-    save_vocab(config.VOCAB, tokenizer, vocab_size)
+    utils.save_vocab(config.VOCAB, tokenizer, vocab_size)
     print("Saving embeddings file...")
-    save_word2vec_format(model, config.EMBEDDINGS, tokenizer, vector_size, vocab_size, save_mode)
+    utils.save_word2vec_format(
+        model, config.EMBEDDINGS, tokenizer, vector_size, vocab_size, save_mode
+    )
 
 
 def parse_args():
@@ -191,18 +116,18 @@ def parse_args():
         "--size", help="number of epochs", dest="vector_size", type=int, default=30
     )
     parser.add_argument(
-        "--num-words",
+        "--max-vocab",
         help="number of most frequent words to keep",
         dest="num_words",
         type=int,
-        default=10000,
+        default=100000,
     )
     parser.add_argument(
-        "--num-lines",
-        help="number of lines to read. -1 all lines are readed",
-        dest="num_lines",
+        "--min-count",
+        help="lower limit such that words which occur fewer than <int> times are discarded",
+        dest="min_count",
         type=int,
-        default=-1,
+        default=5,
     )
     parser.add_argument(
         "--save-mode",
@@ -211,7 +136,6 @@ def parse_args():
         type=int,
         default=0,
     )
-
 
     return parser.parse_args()
 
@@ -225,6 +149,6 @@ if __name__ == "__main__":
         vector_size=args.vector_size,
         save_model=args.model,
         num_words=args.num_words,
-        num_lines=args.num_lines,
+        min_count=args.min_count,
         save_mode=args.save_mode,
     )
