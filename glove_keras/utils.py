@@ -5,7 +5,7 @@ from typing import List, Union, Tuple
 import numpy as np
 from tensorflow.python.keras.preprocessing.text import Tokenizer
 
-import config
+from glove_keras import config
 
 
 def read_file(filename: str) -> List[str]:

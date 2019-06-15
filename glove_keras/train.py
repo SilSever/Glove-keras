@@ -2,9 +2,7 @@ import argparse
 
 import numpy as np
 
-import config
-import models
-import utils
+from glove_keras import models, utils, config
 
 
 def preprocessing(
