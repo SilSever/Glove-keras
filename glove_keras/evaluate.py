@@ -4,7 +4,7 @@ from typing import List
 
 from gensim.models import KeyedVectors
 
-from glove_keras import config
+import config
 
 
 def word_similarity(

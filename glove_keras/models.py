@@ -3,7 +3,7 @@ from tensorflow.python.keras.layers import Input, Embedding, Dot, Reshape, Add
 from tensorflow.python.keras.models import Model
 from tensorflow.python.keras.optimizers import Adagrad
 
-from glove_keras.config import CNTRL_EMB, CTX_EMB, CNTRL_BS, CTX_BS
+from config import CNTRL_EMB, CTX_EMB, CNTRL_BS, CTX_BS
 
 
 class Glove:
