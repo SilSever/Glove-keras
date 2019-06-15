@@ -55,7 +55,7 @@ def train(
     """
 
     glove = models.Glove(
-        vocab_size + 1, vector_dim=vector_size, alpha=alpha, lr=lr, x_max=x_max
+        vocab_size, vector_dim=vector_size, alpha=alpha, lr=lr, x_max=x_max
     )
     glove.model.fit(
         [first_indices, second_indices],
