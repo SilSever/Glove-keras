@@ -1,5 +1,4 @@
 import argparse
-from collections import defaultdict
 
 import numpy as np
 
@@ -8,20 +7,24 @@ import models
 import utils
 
 
-def preprocessing(filename: str, num_words: int = 10000, min_count: int = 5):
+def preprocessing(
+    filename: str, max_vocab: int = 10000, min_count: int = 5, window: int = 15
+):
     """
-
-    :param filename:
-    :param num_words:
-    :param min_count:
-    :return:
+    Preprocess the input file, building the co-occurence matrix.
+    :param filename: Path of the input file.
+    :param max_vocab: Number of most frequent words to keep.
+    :param min_count: Lower limit such that words which occur fewer than <int> times are discarded.
+    :param window: Number of context words to the left and to the right.
+    :return: The co-occurence matrix unpacked.
     """
     sentences = utils.read_file(filename)
-    seqs, tokenizer = utils.tokenize(sentences, num_words, min_count)
-    cache = defaultdict(lambda: defaultdict(int))
-    utils.build_cooccurrences(sequences=seqs, cache=cache)
+    seqs, tokenizer = utils.tokenize(sentences, max_vocab, min_count)
+    cooccurence_dict = utils.build_cooccurrences(sentences=seqs, window=window)
 
-    first_indices, second_indices, frequencies = utils.cache_to_pairs(cache=cache)
+    first_indices, second_indices, frequencies = utils.unpack_cooccurrence(
+        cooccurence_dict=cooccurence_dict
+    )
     return tokenizer, first_indices, second_indices, frequencies
 
 
@@ -36,22 +39,22 @@ def train(
     alpha: float = 0.75,
     lr: float = 0.05,
     x_max: int = 100,
-    save_model: str = None,
+    path_model: str = None,
 ):
     """
-
-    :param first_indices:
-    :param second_indices:
+    Train the Keras GloVe model.
+    :param first_indices: np.array of the first indices of the co-occurence matrix.
+    :param second_indices: np.array of the second indices of the co-occurence matrix.
     :param frequencies:
-    :param epochs:
-    :param batch:
-    :param vector_size:
-    :param vocab_size:
-    :param alpha:
-    :param lr:
-    :param x_max:
-    :param save_model:
-    :return:
+    :param epochs: Number of epochs.
+    :param batch: Size of the batch.
+    :param vector_size: Size of the vectors.
+    :param vocab_size: Size of the vocabulary.
+    :param alpha: Parameter in exponent of weighting function.
+    :param lr: Parameter specifying cutoff in weighting function.
+    :param x_max: Parameter specifying cutoff in weighting function.
+    :param path_model: Path where to save the model.
+    :return: The model.
     """
 
     glove = models.Glove(
@@ -65,7 +68,7 @@ def train(
         verbose=1,
     )
 
-    glove.model.save(save_model)
+    glove.model.save(path_model)
     return glove.model
 
 
@@ -74,8 +77,9 @@ def main(
     epochs: int,
     batch: int,
     vector_size: int,
-    save_model: str,
-    num_words: int,
+    window: int,
+    path_model: str,
+    max_vocab: int,
     min_count: int,
     alpha: float,
     lr: float,
@@ -84,7 +88,7 @@ def main(
 ):
     print("Preprocessing...")
     tokenizer, first_indices, second_indices, freq = preprocessing(
-        path_data, num_words, min_count
+        path_data, max_vocab, min_count, window
     )
 
     vocab_size = tokenizer.num_words + 1
@@ -101,7 +105,7 @@ def main(
         alpha=alpha,
         lr=lr,
         x_max=x_max,
-        save_model=save_model,
+        path_model=path_model,
     )
     print("Saving vocab...")
     utils.save_vocab(config.VOCAB, tokenizer, vocab_size)
@@ -127,12 +131,19 @@ def parse_args():
         "--batch-size", help="size of the batch", dest="batch", type=int, default=512
     )
     parser.add_argument(
-        "--size", help="number of epochs", dest="vector_size", type=int, default=30
+        "--size", help="size of the vectors", dest="vector_size", type=int, default=30
+    )
+    parser.add_argument(
+        "--window",
+        help="number of context words to the left and to the right",
+        dest="window",
+        type=int,
+        default=15,
     )
     parser.add_argument(
         "--max-vocab",
         help="number of most frequent words to keep",
-        dest="num_words",
+        dest="max_vocab",
         type=int,
         default=100000,
     )
@@ -178,8 +189,9 @@ if __name__ == "__main__":
         epochs=args.epochs,
         batch=args.batch,
         vector_size=args.vector_size,
-        save_model=args.model,
-        num_words=args.num_words,
+        window=args.window,
+        path_model=args.model,
+        max_vocab=args.max_vocab,
         min_count=args.min_count,
         alpha=args.alpha,
         lr=args.lr,

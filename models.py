@@ -25,6 +25,7 @@ class Glove:
 
     def build_model(self, vocab_size: int, vector_dim: int):
         """
+        Builds the Keras model.
         :param vocab_size: The number of distinct words.
         :param vector_dim: The vector dimension of each word.
         :return: the Keras GloVe model.
@@ -60,10 +61,10 @@ class Glove:
 
     def custom_loss(self, y_true, y_pred):
         """
-        This is GloVe's loss function, view section 3.1 on the original paper for details.
-        :param y_true: The actual values, y_true = X_ij
-        :param y_pred: The predicted occurrences from the model ( w_i^T*w_j )
-        :return: The loss associated with this batch
+        GloVe's loss function, view section 3.1 on the original paper for details.
+        :param y_true: The actual values, y_true = X_ij.
+        :param y_pred: The predicted occurrences from the model ( w_i^T*w_j ).
+        :return: The loss associated with this batch.
         """
         x_max = self.x_max
         alpha = self.alpha
