@@ -11,15 +11,15 @@ class Glove:
         self,
         vocab_size: int = 10,
         vector_dim: int = 3,
-        alpha: int = 0.75,
-        x_max: int = 100,
-        lr: int = 0.05,
+        alpha: float = 0.75,
+        lr: float = 0.05,
+        x_max: int = 100
     ):
         self.vocab_size = vocab_size
         self.vector_dim = vector_dim
         self.alpha = alpha
-        self.x_max = x_max
         self.lr = lr
+        self.x_max = x_max
 
         self.model = self.build_model(self.vocab_size, self.vector_dim)
 

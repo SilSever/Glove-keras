@@ -33,6 +33,9 @@ def train(
     batch: int = 512,
     vector_size: int = 30,
     vocab_size: int = 10000,
+    alpha: float = 0.75,
+    lr: float = 0.05,
+    x_max: int = 100,
     save_model: str = None,
 ):
     """
@@ -44,11 +47,16 @@ def train(
     :param batch:
     :param vector_size:
     :param vocab_size:
+    :param alpha:
+    :param lr:
+    :param x_max:
     :param save_model:
     :return:
     """
 
-    glove = models.Glove(vocab_size + 1, vector_dim=vector_size)
+    glove = models.Glove(
+        vocab_size + 1, vector_dim=vector_size, alpha=alpha, lr=lr, x_max=x_max
+    )
     glove.model.fit(
         [first_indices, second_indices],
         frequencies,
@@ -69,6 +77,9 @@ def main(
     save_model: str,
     num_words: int,
     min_count: int,
+    alpha: float,
+    lr: float,
+    x_max: int,
     save_mode: int,
 ):
     print("Preprocessing...")
@@ -87,6 +98,9 @@ def main(
         batch=batch,
         vector_size=vector_size,
         vocab_size=vocab_size,
+        alpha=alpha,
+        lr=lr,
+        x_max=x_max,
         save_model=save_model,
     )
     print("Saving vocab...")
@@ -130,6 +144,23 @@ def parse_args():
         default=5,
     )
     parser.add_argument(
+        "--alpha",
+        help="parameter in exponent of weighting function",
+        dest="alpha",
+        type=float,
+        default=0.75,
+    )
+    parser.add_argument(
+        "--lr", help="initial learning rate", dest="lr", type=float, default=0.05
+    )
+    parser.add_argument(
+        "--x-max",
+        help="parameter specifying cutoff in weighting function",
+        dest="x_max",
+        type=int,
+        default=100,
+    )
+    parser.add_argument(
         "--save-mode",
         help="save mode determines the type of embeddings to save",
         dest="save_mode",
@@ -150,5 +181,8 @@ if __name__ == "__main__":
         save_model=args.model,
         num_words=args.num_words,
         min_count=args.min_count,
+        alpha=args.alpha,
+        lr=args.lr,
+        x_max=args.x_max,
         save_mode=args.save_mode,
     )
