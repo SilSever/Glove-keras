@@ -1,12 +1,13 @@
 import itertools
+import multiprocessing
 from collections import defaultdict, OrderedDict, Counter
 from functools import partial
+from multiprocessing import Pool
 from typing import List, Union, Tuple, Dict
 
 import nltk
 import numpy as np
-import multiprocessing
-from multiprocessing import Pool
+
 import config
 
 
@@ -73,7 +74,7 @@ def word_to_index(word_index, word):
     :return: a list with just an element
     """
     if word in word_index:
-        return [word_index[word]]
+        return word_index[word]
 
 
 def texts_to_sequences(lines: List[List[str]], word_index: Dict[str, int]):
