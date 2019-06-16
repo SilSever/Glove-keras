@@ -63,13 +63,7 @@ def print_accuracy(model, questions_file):
 
 def parse_args():
     parser = argparse.ArgumentParser("GloVe evaluation")
-    parser.add_argument(nargs="+", help="words to test", dest="words")
-    parser.add_argument(
-        "-e", help="paths to the embeddings file", required=True, dest="vectors"
-    )
-    parser.add_argument(
-        "--top", help="number of similar words to retrieve", dest="top", default=3
-    )
+    parser.add_argument(help="paths to the embeddings file", dest="vectors")
 
     return parser.parse_args()
 
@@ -81,7 +75,5 @@ def main(words: List[str], path_embeddings: str, top_k: int = 3):
 
 
 if __name__ == "__main__":
-    # args = parse_args()
-    # main(args.words, args.vectors, args.top)
-    # fancy_w2v_operation(args.vectors)
-    evaluation(config.EMBEDDINGS)
+    args = parse_args()
+    evaluation(args.vectors)

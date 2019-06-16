@@ -1,9 +1,9 @@
 import itertools
-from collections import defaultdict
-from typing import List, Union, Tuple
+from collections import defaultdict, OrderedDict, Counter
+from typing import List, Union, Tuple, Dict
 
+import nltk
 import numpy as np
-from tensorflow.python.keras.preprocessing.text import Tokenizer
 
 import config
 
@@ -21,24 +21,56 @@ def read_file(filename: str) -> List[str]:
 
 def tokenize(
     lines: List[str], max_vocab: int = 10000, min_count: int = 5
-) -> Tuple[List[List], Tokenizer]:
+) -> Tuple[List[List], Dict[str, int], Dict[str, int]]:
     """
-    Keras Tokenizer to tokenize the lines.
+    Tokenize the lines.
     :param lines: A list of strings.
     :param max_vocab: The maximum number of words to keep.
     :param min_count: Lower limit such that words which occur fewer than <int> times are discarded.
-    :return: A list of word indices per sentence, the tokenizer object.
+    :return: A list of word indices per sentence, the word frequences dict and the word index dict.
     """
-    tokenizer = Tokenizer(num_words=max_vocab)
-    tokenizer.fit_on_texts(lines)
-    print("Num words before:", tokenizer.num_words)
-    firs_num_word = itertools.islice(tokenizer.word_counts.items(), max_vocab)
-    low_count_words = sum(1 for w, c in firs_num_word if c < min_count)
-    tokenizer.num_words -= low_count_words
-    print("Num words after:", tokenizer.num_words)
+    print("Tokenization of the file...")
+    lines_tokenized = [nltk.word_tokenize(l) for l in lines]
+    print("Building word vocabs...")
+    word_counts = build_word_counts(lines_tokenized)
+    max_vocab_counts = itertools.islice(word_counts.items(), max_vocab)
+    word_counts_reduced = {w: c for w, c in max_vocab_counts if c >= min_count}
+    word_index = build_word_index(word_counts_reduced)
+    print("Number of tokens:", len(word_index))
+    print("Texts to sequences...")
+    sequences = texts_to_sequences(lines_tokenized, word_index)
+    return sequences, word_index, word_counts_reduced
 
-    sequences = tokenizer.texts_to_sequences(lines)
-    return sequences, tokenizer
+
+def build_word_counts(lines: List[List[str]]) -> OrderedDict:
+    """
+    Builds a dictionary of word frequences.
+    :param lines: A list of list of strings.
+    :return: an ordered dict of word frequences.
+    """
+    word_counts = Counter(w for l in lines for w in l)
+    return OrderedDict(
+        sorted(word_counts.items(), key=lambda k: int(k[1]), reverse=True)
+    )
+
+
+def build_word_index(word_counts: Dict) -> Dict:
+    """
+    Builds a dictionary from word to index.
+    :param word_counts: Dictionary of word frequences.
+    :return: a dicitonary word -> index.
+    """
+    return {k: i for i, k in enumerate(word_counts)}
+
+
+def texts_to_sequences(lines: List[List[str]], word_index: Dict[str, int]):
+    """
+    Transforms each text to a sequence of integers.
+    :param lines: A list of list of strings.
+    :param word_index: dictionary of word indexes.
+    :return: A list of sequences.
+    """
+    return [[word_index[word] for word in line if word in word_index] for line in lines]
 
 
 def build_cooccurrences(sentences: List[List[int]], window: int = 15):
@@ -99,12 +131,45 @@ def unpack_cooccurrence(
     return np.array(first), np.array(second), np.array(x_ijs)
 
 
-def vectors_save_mode(save_mode: int, model):
+def save_word2vec_format(
+    model,
+    path: str,
+    word_index: Dict,
+    vector_size: int,
+    save_mode: int,
+):
     """
+    Store the input-hidden weight matrix in the same format used by the original
+    C word2vec-tool, for compatibility.
+    :param model: keras model.
+    :param path: path where to save the vectors.
+    :param word_index: dictionary of word idexes.
+    :param vector_size: size of the vectors
+    :param save_mode: modes for word vector output
+        0: output all data, for both word and context word vectors, including bias terms
+        1: output word vectors, excluding bias terms
+        2: output word vectors + context word vectors, excluding bias terms
+    :return:
+    """
+    # saving embeddings
+    vectors = _vectors_save_mode(save_mode, model)
+    with open(path, "w") as f:
+        f.write("{} {}\n".format(len(word_index) - 1, vector_size))
 
+        for word, i in word_index.items():
+            str_vec = " ".join(map(str, list(vectors[i, :])))
+            f.write("{} {}\n".format(word, str_vec))
+
+
+def _vectors_save_mode(save_mode: int, model):
+    """
+    Modes for word vector output.
     :param save_mode:
-    :param model:
-    :return vectors:
+        0: output all data, for both word and context word vectors, including bias terms
+        1: output word vectors, excluding bias terms
+        2: output word vectors + context word vectors, excluding bias terms
+    :param model: model
+    :return vectors: vectors
     """
 
     if save_mode is 0:
@@ -137,46 +202,13 @@ def vectors_save_mode(save_mode: int, model):
     return vectors
 
 
-def save_word2vec_format(
-    model,
-    path: str,
-    tokenizer: Tokenizer,
-    vector_size: int,
-    vocab_size: int,
-    save_mode: int,
-):
+def save_vocab(path: str, word_counts: Dict):
     """
-
-    :param model:
-    :param path:
-    :param tokenizer:
-    :param vector_size:
-    :param vocab_size:
-    :param save_mode:
-    :return:
-    """
-    # saving embeddings
-    vectors = vectors_save_mode(save_mode, model)
-    with open(path, "w") as f:
-        f.write("{} {}\n".format(vocab_size - 1, vector_size))
-
-        for word, i in tokenizer.word_index.items():
-            if i > vocab_size:
-                return
-            str_vec = " ".join(map(str, list(vectors[i, :])))
-            f.write("{} {}\n".format(word, str_vec))
-
-
-def save_vocab(path: str, tokenizer: Tokenizer, vocab_size: int):
-    """
-
-    :param path:
-    :param tokenizer:
-    :param vocab_size:
+    Save word with frequences as file.
+    :param path: path where to save the vocab.
+    :param word_counts: dictionary with words and frequences.
     :return:
     """
     with open(path, mode="w") as f:
-        for word, i in tokenizer.word_index.items():
-            if i > vocab_size:
-                return
-            f.write("{} {}\n".format(word, tokenizer.word_counts[word]))
+        for word, i in word_counts.items():
+            f.write("{} {}\n".format(word, word_counts[word]))

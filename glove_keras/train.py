@@ -19,13 +19,13 @@ def preprocessing(
     :return: The co-occurence matrix unpacked.
     """
     sentences = utils.read_file(filename)
-    seqs, tokenizer = utils.tokenize(sentences, max_vocab, min_count)
+    seqs, word_index, word_counts = utils.tokenize(sentences, max_vocab, min_count)
     cooccurence_dict = utils.build_cooccurrences(sentences=seqs, window=window)
 
     first_indices, second_indices, frequencies = utils.unpack_cooccurrence(
         cooccurence_dict=cooccurence_dict
     )
-    return tokenizer, first_indices, second_indices, frequencies
+    return first_indices, second_indices, frequencies, word_index, word_counts
 
 
 def train(
@@ -60,7 +60,8 @@ def train(
     glove = models.Glove(
         vocab_size + 1, vector_dim=vector_size, alpha=alpha, lr=lr, x_max=x_max
     )
-    glove.model.fit(
+
+    glove.model.fit_generator(
         [first_indices, second_indices],
         frequencies,
         epochs=epochs,
@@ -87,11 +88,11 @@ def main(
     save_mode: int,
 ):
     print("Preprocessing...")
-    tokenizer, first_indices, second_indices, freq = preprocessing(
+    first_indices, second_indices, freq, word_index, word_counts = preprocessing(
         path_data, max_vocab, min_count, window
     )
 
-    vocab_size = tokenizer.num_words + 1
+    vocab_size = len(word_counts) + 1
     print("Vocab size:", vocab_size)
     print("Training...")
     model = train(
@@ -108,10 +109,10 @@ def main(
         path_model=path_model,
     )
     print("Saving vocab...")
-    utils.save_vocab(config.VOCAB, tokenizer, vocab_size)
+    utils.save_vocab(config.VOCAB, word_counts)
     print("Saving embeddings file...")
     utils.save_word2vec_format(
-        model, config.EMBEDDINGS, tokenizer, vector_size, vocab_size, save_mode
+        model, config.EMBEDDINGS, word_index, vector_size, save_mode
     )
 
 
@@ -176,7 +177,7 @@ def parse_args():
         help="save mode determines the type of embeddings to save",
         dest="save_mode",
         type=int,
-        default=0,
+        default=2,
     )
 
     return parser.parse_args()

@@ -13,7 +13,7 @@ class Glove:
         vector_dim: int = 3,
         alpha: float = 0.75,
         lr: float = 0.05,
-        x_max: int = 100
+        x_max: int = 100,
     ):
         self.vocab_size = vocab_size
         self.vector_dim = vector_dim
