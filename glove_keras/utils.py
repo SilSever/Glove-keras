@@ -1,10 +1,12 @@
 import itertools
 from collections import defaultdict, OrderedDict, Counter
+from functools import partial
 from typing import List, Union, Tuple, Dict
 
 import nltk
 import numpy as np
-
+import multiprocessing
+from multiprocessing import Pool
 import config
 
 
@@ -63,6 +65,17 @@ def build_word_index(word_counts: Dict) -> Dict:
     return {k: i for i, k in enumerate(word_counts)}
 
 
+def word_to_index(word_index, word):
+    """
+    Partial function of texts_to_sequences used for multiprocessing
+    :param word_index: dictionary of word indexes.
+    :param word: just a string
+    :return: a list with just an element
+    """
+    if word in word_index:
+        return [word_index[word]]
+
+
 def texts_to_sequences(lines: List[List[str]], word_index: Dict[str, int]):
     """
     Transforms each text to a sequence of integers.
@@ -70,7 +83,7 @@ def texts_to_sequences(lines: List[List[str]], word_index: Dict[str, int]):
     :param word_index: dictionary of word indexes.
     :return: A list of sequences.
     """
-    return [[word_index[word] for word in line if word in word_index] for line in lines]
+    return [Pool(multiprocessing.cpu_count()).map(partial(word_to_index, word_index), line) for line in lines]
 
 
 def build_cooccurrences(sentences: List[List[int]], window: int = 15):
