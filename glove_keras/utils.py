@@ -84,7 +84,17 @@ def texts_to_sequences(lines: List[List[str]], word_index: Dict[str, int]):
     :param word_index: dictionary of word indexes.
     :return: A list of sequences.
     """
-    return [Pool(multiprocessing.cpu_count()).map(partial(word_to_index, word_index), line) for line in lines]
+    return [
+        list(
+            filter(
+                None,
+                Pool(multiprocessing.cpu_count()).map(
+                    partial(word_to_index, word_index), line
+                ),
+            )
+        )
+        for line in lines
+    ]
 
 
 def build_cooccurrences(sentences: List[List[int]], window: int = 15):
@@ -146,11 +156,7 @@ def unpack_cooccurrence(
 
 
 def save_word2vec_format(
-    model,
-    path: str,
-    word_index: Dict,
-    vector_size: int,
-    save_mode: int,
+    model, path: str, word_index: Dict, vector_size: int, save_mode: int
 ):
     """
     Store the input-hidden weight matrix in the same format used by the original
