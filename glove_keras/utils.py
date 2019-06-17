@@ -14,7 +14,7 @@ def read_file(filename: str) -> List[str]:
     :param filename: file to read
     :return: a list of lines
     """
-    with open(filename, mode="r", encoding="utf8") as file:
+    with open(filename, mode="r", encoding="utf8", errors="ignore") as file:
         f = (line.strip() for line in file)
         return [line for line in f if line]
 
@@ -30,7 +30,7 @@ def tokenize(
     :return: A list of word indices per sentence, the word frequences dict and the word index dict.
     """
     print("Tokenization of the file...")
-    lines_tokenized = [nltk.word_tokenize(l) for l in lines]
+    lines_tokenized = [l.lower().split() for l in lines]
     print("Building word vocabs...")
     word_counts = build_word_counts(lines_tokenized)
     max_vocab_counts = itertools.islice(word_counts.items(), max_vocab)
