@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import numpy as np
 
@@ -111,6 +112,9 @@ def main(
     print("Saving vocab...")
     utils.save_vocab(config.VOCAB, word_counts)
     print("Saving embeddings file...")
+    path_folder = config.EMBEDDINGS.split("/")[0]
+    if not os.path.isdir(path_folder):
+        os.mkdir(path_folder)
     utils.save_word2vec_format(
         model, config.EMBEDDINGS, word_index, vector_size, save_mode
     )
