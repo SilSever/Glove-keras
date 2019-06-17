@@ -1,8 +1,5 @@
 import itertools
-import multiprocessing
 from collections import defaultdict, OrderedDict, Counter
-from functools import partial
-from multiprocessing import Pool
 from typing import List, Union, Tuple, Dict
 
 import nltk
@@ -66,17 +63,6 @@ def build_word_index(word_counts: Dict) -> Dict:
     return {k: i for i, k in enumerate(word_counts)}
 
 
-def word_to_index(word_index, word):
-    """
-    Partial function of texts_to_sequences used for multiprocessing
-    :param word_index: dictionary of word indexes.
-    :param word: just a string
-    :return: a list with just an element
-    """
-    if word in word_index:
-        return word_index[word]
-
-
 def texts_to_sequences(lines: List[List[str]], word_index: Dict[str, int]):
     """
     Transforms each text to a sequence of integers.
@@ -85,14 +71,7 @@ def texts_to_sequences(lines: List[List[str]], word_index: Dict[str, int]):
     :return: A list of sequences.
     """
     return [
-        list(
-            filter(
-                None,
-                Pool(multiprocessing.cpu_count()).map(
-                    partial(word_to_index, word_index), line
-                ),
-            )
-        )
+        [word_index.get(word) for word in line if word_index.get(word)]
         for line in lines
     ]
 
@@ -232,3 +211,15 @@ def save_vocab(path: str, word_counts: Dict):
     with open(path, mode="w") as f:
         for word, i in word_counts.items():
             f.write("{} {}\n".format(word, word_counts[word]))
+
+
+def timer(start: float, end: float):
+    """
+    Timer function. Compute execution time from strart to end (end - start)
+    :param start: start time
+    :param end: end time
+    :return: end - start
+    """
+    hours, rem = divmod(end - start, 3600)
+    minutes, seconds = divmod(rem, 60)
+    return "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)

@@ -20,8 +20,8 @@ def preprocessing(
     """
     sentences = utils.read_file(filename)
     seqs, word_index, word_counts = utils.tokenize(sentences, max_vocab, min_count)
+    print("Building cooccurences matrix...")
     cooccurence_dict = utils.build_cooccurrences(sentences=seqs, window=window)
-
     first_indices, second_indices, frequencies = utils.unpack_cooccurrence(
         cooccurence_dict=cooccurence_dict
     )
