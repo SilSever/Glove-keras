@@ -40,7 +40,6 @@ def train(
     alpha: float = 0.75,
     lr: float = 0.05,
     x_max: int = 100,
-    path_model: str = None,
 ):
     """
     Train the Keras GloVe model.
@@ -70,7 +69,7 @@ def train(
         verbose=1,
     )
 
-    glove.model.save(path_model)
+    glove.model.save(config.SAVE_WEIGHTS)
     return glove.model
 
 
@@ -80,7 +79,7 @@ def main(
     batch: int,
     vector_size: int,
     window: int,
-    path_model: str,
+    path_vectors: str,
     max_vocab: int,
     min_count: int,
     alpha: float,
@@ -107,16 +106,15 @@ def main(
         alpha=alpha,
         lr=lr,
         x_max=x_max,
-        path_model=path_model,
     )
     print("Saving vocab...")
     utils.save_vocab(config.VOCAB, word_counts)
     print("Saving embeddings file...")
-    path_folder = config.EMBEDDINGS.split("/")[0]
-    if not os.path.isdir(path_folder):
-        os.mkdir(path_folder)
+    # path_folder = config.EMBEDDINGS.split("/")[0]
+    # if not os.path.isdir(path_folder):
+    #     os.mkdir(path_folder)
     utils.save_word2vec_format(
-        model, config.EMBEDDINGS, word_index, vector_size, save_mode
+        model, path_vectors, word_index, vector_size, save_mode
     )
 
 
@@ -124,10 +122,10 @@ def parse_args():
     parser = argparse.ArgumentParser("GloVe train")
     parser.add_argument(help="paths to the corpora", dest="input")
     parser.add_argument(
-        "-m",
-        help="path where to save the model file",
-        dest="model",
-        default=config.SAVE_MODEL,
+        "-o",
+        help="path where to save the vectors",
+        dest="vectors",
+        default=config.EMBEDDINGS,
     )
     parser.add_argument(
         "--epochs", help="number of epochs", dest="epochs", type=int, default=5
@@ -195,7 +193,7 @@ if __name__ == "__main__":
         batch=args.batch,
         vector_size=args.vector_size,
         window=args.window,
-        path_model=args.model,
+        path_vectors=args.vectors,
         max_vocab=args.max_vocab,
         min_count=args.min_count,
         alpha=args.alpha,

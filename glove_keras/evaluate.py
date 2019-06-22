@@ -26,20 +26,8 @@ def fancy_w2v_operation(path_embeddings):
     print(vectors.most_similar(positive=["woman", "king"], negative=["man"], topn=2))
 
 
-def evaluation(path_embeddings: str):
-    logging.basicConfig(
-        format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO
-    )
-    accuracies = []
-    print("Loading Gensim embeddings")
-    vectors = KeyedVectors.load_word2vec_format(path_embeddings)
-    accuracies.append(print_accuracy(vectors, config.QUESTIONS_WORDS))
-
-
-def print_accuracy(model, questions_file):
-    print("Evaluating...")
-    acc = model.accuracy(questions_file)
-
+def word_analogy(vectors):
+    acc = vectors.accuracy(config.QUESTIONS_WORDS)
     sem_correct = sum((len(acc[i]["correct"]) for i in range(5)))
     sem_total = sum(
         (len(acc[i]["correct"]) + len(acc[i]["incorrect"])) for i in range(5)
@@ -58,7 +46,16 @@ def print_accuracy(model, questions_file):
     tot_total = sem_total + syn_total
     tot_acc = 100 * float(tot_correct) / tot_total
     print("Total: {}/{}, Accuracy: {:.2f}%".format(tot_correct, tot_total, tot_acc))
-    return sem_acc, syn_acc
+    return sem_acc, syn_acc, tot_acc
+
+
+def word_sim(vectors):
+    sim_ws353 = vectors.wv.evaluate_word_pairs(config.WS_353)
+    sim_rg = vectors.wv.evaluate_word_pairs(config.RG)
+    print("Spearman correlations")
+    print("WordSim353: {:.3f}".format(sim_ws353[1][0]))
+    print("RG: {:.3f}".format(sim_rg[1][0]))
+    return sim_ws353, sim_rg
 
 
 def parse_args():
@@ -75,5 +72,15 @@ def main(words: List[str], path_embeddings: str, top_k: int = 3):
 
 
 if __name__ == "__main__":
+
+    logging.basicConfig(
+        format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO
+    )
+
     args = parse_args()
-    evaluation(args.vectors)
+    print("Loading Gensim embeddings")
+    embeddings = KeyedVectors.load_word2vec_format(args.vectors)
+    print("Word Analogies")
+    word_analogy(embeddings)
+    print("Word Similarity")
+    word_sim(embeddings)

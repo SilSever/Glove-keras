@@ -3,7 +3,7 @@
 ## Dataset
 
 * text8: http://mattmahoney.net/dc/text8.zip
-
+* Word2Vec OpinRank: https://github.com/kavgan/nlp-in-practice/tree/master/word2vec
 ## Links
 
 * [GloVe Paper](https://www.aclweb.org/anthology/D14-1162)

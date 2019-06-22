@@ -5,6 +5,8 @@ UNKNOWN_WORD = "<unk>"
 EMBEDDINGS = "output/vectors.txt"
 VOCAB = "output/vocab.txt"
 QUESTIONS_WORDS = "resources/questions-words.txt"
+WS_353 = "resources/wordsim353.tsv"
+RG = "resources/rg.tsv"
 
 CNTRL_EMB = 'central_embeddings'
 CTX_EMB = 'context_embeddings'
